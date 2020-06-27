@@ -5,6 +5,38 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <iomanip>
+
+#define ASSERT(x) if(!(x)) __debugbreak();
+
+#define GLCall(x) GLClearError();\
+    x;\
+    ASSERT(GLLogCall(#x, __FILE__, __LINE__))
+
+static std::string GLTranslateError(unsigned int error) {
+    std::stringstream stream;
+    stream << "0x" << std::setfill('0') << std::setw(4) << std::hex << error;
+    std::string hexError(stream.str());
+    return hexError;
+}
+
+static void GLClearError() {
+    while (glGetError() != GL_NO_ERROR);  
+}
+
+static bool GLLogCall(const char* function, const char* file, int line) {
+    while (GLenum error = glGetError()) {
+        std::cout << "[OpenGL Error] (" << GLTranslateError(error) << ") " 
+            << "on func: "<< function 
+            << " on file: "<< file 
+            << " @line: "
+            << line
+            << std::endl;
+        return false;
+    }
+
+    return true;
+}
 
 struct ShaderProgramSource {
     std::string VertexSource;
@@ -70,7 +102,7 @@ static int CreateShader(const std::string& vertexShader, const std::string& frag
     glLinkProgram(program);
     glValidateProgram(program);
 
-    // i dati relativi a vs e fs sono stati memorizzati in 'program', quindi dereferenziamo
+    // i dati relativi a vs e fs sono stati memorizzati in 'program', quindi li cancelliamo dalla memoria
     glDeleteShader(vs); 
     glDeleteShader(fs);
     return program;
@@ -109,14 +141,40 @@ int main(void)
          0.5f,  -0.5f
      };
 
+   /* considerato che i vertici sono ripetuti, duplicando le informazioni stiamo buttando via memoria
+    * quindi useremo un IndexBuffer
+   float squarePositions[]{
+        -0.5f,  -0.5f,
+         0.5f,  -0.5f,
+         0.5f,   0.5f,
+
+         0.5f,   0.5f,
+        -0.5f,   0.5f,
+        -0.5f,  -0.5f,
+   };  */
+    
+   float squarePositions[]{
+        -0.5f,  -0.5f, // 0
+         0.5f,  -0.5f, // 1
+         0.5f,   0.5f, // 2
+        -0.5f,   0.5f  // 3
+   };
+
+   unsigned int indices[] = {
+       0,1,2,
+       2,3,0
+   };
+
      unsigned int buffer;
      glGenBuffers(1, &buffer); // vertex buffer
      glBindBuffer(GL_ARRAY_BUFFER, buffer); // Collego il vertex buffer al contesto 
 
      // Dichiaro quali sono i dati che il buffer utilizzerà
      glBufferData(GL_ARRAY_BUFFER, // un buffer di vertex
-         6 * sizeof(float),  // 6 posizioni di tipo float
-         trianglePositions, 
+        // 6 * sizeof(float),  // triangolo, 6 posizioni di tipo float
+         6 * 2 * sizeof(float),  // 6 posizioni di tipo float
+         //trianglePositions, 
+         squarePositions,
          GL_STATIC_DRAW); 
 
      glEnableVertexAttribArray(0); // 
@@ -129,14 +187,14 @@ int main(void)
          sizeof(float) * 2, // stride di tipo * immagine 2d, quantità di dati riservata tra un vertex e l'altro
          0);
    
-
-     glBindBuffer(GL_ARRAY_BUFFER, 0);
+     unsigned int ibo;
+     glGenBuffers(1, &ibo);
+     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * 2 * sizeof(unsigned int),  indices, GL_STATIC_DRAW);
 
      ShaderProgramSource source = ParseShader("res/shaders/Object.shader");
-   
      unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
      glUseProgram(shader);
-
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
@@ -145,9 +203,20 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
         
         // disegno i vertici prendendoli da un vertex buffer
-        glDrawArrays(GL_TRIANGLES, // di tipo triangolare
-            0,
-            3); // con 3 vertici distinti
+        //glDrawArrays(GL_TRIANGLES, // di tipo triangolare
+        //    0,
+        //    3); // con 3 vertici distinti
+
+        //glDrawArrays(GL_TRIANGLES, // di tipo quadrato
+        //    0,
+        //    6); // con 6 vertici distinti
+
+       
+        GLCall(glDrawElements(GL_TRIANGLES, // di tipo triangolare
+            6, // 6 vertici
+            GL_INT, // ogni index buffer deve avere unsigned int come tipo di dato
+            nullptr)); // e fatto il bind di glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); quindi non serve impostare l'indice
+       
 
         /* Legacy Triangle 
         glBegin(GL_TRIANGLES);
