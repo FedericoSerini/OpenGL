@@ -30,6 +30,9 @@
     <ClCompile Include="src\VertexArray.cpp">
       <Filter>File di origine</Filter>
     </ClCompile>
+    <ClCompile Include="src\Shader.cpp">
+      <Filter>File di origine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\shaders\Object.shader" />
@@ -49,6 +52,9 @@
       <Filter>File di intestazione</Filter>
     </ClInclude>
     <ClInclude Include="src\VertexBufferLayout.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Shader.h">
       <Filter>File di intestazione</Filter>
     </ClInclude>
   </ItemGroup>
