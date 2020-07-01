@@ -8,8 +8,10 @@
 #include <iomanip>
 
 #include "Renderer.h"
+
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
+#include "VertexArray.h"
 
 struct ShaderProgramSource {
     std::string VertexSource;
@@ -144,20 +146,14 @@ int main(void)
         GLCall(glGenVertexArrays(1, &vao));
         GLCall(glBindVertexArray(vao));
 
-
+        VertexArray va;
         VertexBuffer vb(squarePositions, 4 * 2 * sizeof(float));
 
+        VertexBufferLayout layout;
+        layout.Push<float>(2);
+        va.AddBuffer(vb, layout);
 
-
-        glEnableVertexAttribArray(0);
-        // questo indica alla GPU come interpretare i dati
-        glVertexAttribPointer(0, // componente 0 
-            2, // abbiamo un triangolo 2d
-            GL_FLOAT, // i dati sono di tipo float
-            GL_FALSE, // non normalizzati
-            sizeof(float) * 2, // stride di tipo * immagine 2d, quantità di dati riservata tra un vertex e l'altro
-            0);
-
+   
         IndexBuffer ib(indices, 6);
 
         ShaderProgramSource source = ParseShader("res/shaders/Object.shader");
@@ -194,7 +190,7 @@ int main(void)
             glUseProgram(shader);
             GLCall(glUniform4f(location, red, 0.3f, 0.8f, 1.0f));
 
-            glBindVertexArray(vao);
+            va.Bind();
             ib.Bind();
 
             GLCall(glDrawElements(GL_TRIANGLES, // di tipo triangolare
